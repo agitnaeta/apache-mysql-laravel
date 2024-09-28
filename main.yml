@@ -1,6 +1,6 @@
 ---
 - name: Install Apache, MySQL, PHP 8.2 with Laravel extensions and NVM
-  hosts: all
+  hosts: localhost
   become: yes
 
   tasks:
@@ -40,33 +40,30 @@
           - php8.2-intl
         state: present
 
-    - name: Install Composer
-      command: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-      args:
-        creates: /usr/local/bin/composer
-
-    - name: Install NVM dependencies
+    - name: Install Composer using apt
       apt:
-        name:
-          - curl
-          - build-essential
-          - libssl-dev
+        name: composer
         state: present
 
-    - name: Clone NVM repository
-      git:
-        repo: "https://github.com/nvm-sh/nvm.git"
-        dest: ~/.nvm
-        version: v0.39.5 # Specify the latest stable version or replace with the desired version
+    - name: Install NVM
+      shell: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+      args:
+        creates: "{{ ansible_env.HOME }}/.nvm"
 
-    - name: Add NVM source to profile
+    - name: Set NVM environment variables
+      shell: |
+        export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+      args:
+        executable: /bin/bash
+
+    - name: Add NVM environment variables to profile
       lineinfile:
         path: ~/.bashrc
-        line: 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm'
+        line: |
+          export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
         create: yes
-
-    - name: Source .bashrc to load NVM
-      shell: source ~/.bashrc
 
     - name: Restart Apache
       service:
