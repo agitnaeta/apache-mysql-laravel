@@ -1,0 +1,80 @@
+---
+- name: Install Apache, MySQL, PHP 8.2 with Laravel extensions and NVM
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Apache
+      apt:
+        name: apache2
+        state: present
+
+    - name: Enable Apache mod_rewrite
+      command: a2enmod rewrite
+      notify:
+        - Restart Apache
+
+    - name: Install MySQL server
+      apt:
+        name: mysql-server
+        state: present
+
+    - name: Install PHP 8.2 and extensions for Laravel
+      apt:
+        name:
+          - php8.2
+          - php8.2-cli
+          - php8.2-fpm
+          - php8.2-mysql
+          - php8.2-xml
+          - php8.2-mbstring
+          - php8.2-zip
+          - php8.2-curl
+          - php8.2-gd
+          - php8.2-bcmath
+          - php8.2-tokenizer
+          - php8.2-intl
+        state: present
+
+    - name: Install Composer
+      command: curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+      args:
+        creates: /usr/local/bin/composer
+
+    - name: Install NVM dependencies
+      apt:
+        name:
+          - curl
+          - build-essential
+          - libssl-dev
+        state: present
+
+    - name: Clone NVM repository
+      git:
+        repo: "https://github.com/nvm-sh/nvm.git"
+        dest: ~/.nvm
+        version: v0.39.5 # Specify the latest stable version or replace with the desired version
+
+    - name: Add NVM source to profile
+      lineinfile:
+        path: ~/.bashrc
+        line: 'export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm'
+        create: yes
+
+    - name: Source .bashrc to load NVM
+      shell: source ~/.bashrc
+
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
+
+  handlers:
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
