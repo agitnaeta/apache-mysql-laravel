@@ -8,6 +8,15 @@
       apt:
         update_cache: yes
 
+    - name: Add ondrej/php repository
+      apt_repository:
+        repo: ppa:ondrej/php
+        state: present
+
+    - name: Update apt cache after adding ondrej/php
+      apt:
+        update_cache: yes
+
     - name: Install Apache
       apt:
         name: apache2
